@@ -8,7 +8,8 @@ Peaceful reads **PEACE / Equalizer APO** `.txt` presets and builds **Easy Effect
 
 - Reads Equalizer APO style `Filter:` / `Preamp:` lines (PK, LS, HS, LSC, HSC, and similar). Skips what it does not support.
 - Reads a single-line **`GraphicEQ:`** preset (`GraphicEQ: 20 1.5; 40 2.0; ...`) like many AutoEq exports. That is converted to peaking bands (approximation, not identical to APO's GraphicEQ).
-- Does **not** read Peace's **`.peace`** profile files. Point Peaceful at a `.txt` that contains APO text (for example content like `Filter 1: ON PK ...` or `GraphicEQ: ...`), or paste that text into a new file.
+- Reads Peace **`FilterCurve:`** text (`f0="Hz" v0="dB" ...`) as peaking bands. That is an approximation of Peace's spline curve, not identical to Peace on Windows.
+- Some **`.peace`** files are plain text (APO-style `Filter` lines inside); those work. Others are Peace-only or binary; use a `.txt` with APO text, `GraphicEQ:`, or `FilterCurve:` if `import` shows no bands.
 - `import`: print JSON for debugging.
 - `apply`: write `peaceful_import.json` (or another name) into Easy Effects' output preset folder.
 - `visualize`: optional EQ curve plot (needs extra Python packages).
@@ -115,7 +116,20 @@ or:
 peaceful apply "/path/to/preset.txt" -o "$HOME/.var/app/com.github.wwmm.easyeffects/config/easyeffects/output"
 ```
 
-**3. Windows workflow tip:** run `import` or `apply --no-reload` with `-o` pointing to a folder you can copy to your Linux machine (USB, cloud), then drop the `.json` into the Easy Effects `output` folder on Linux.
+**3. Windows PC, Linux audio (Easy Effects does not run on Windows)**
+
+Easy Effects is **Linux-only**. On Windows you can still build the preset JSON, then copy it to Linux.
+
+```powershell
+peaceful apply "C:\path\to\preset.peace" --no-reload -o "C:\path\to\folder_for_linux"
+```
+
+That writes `peaceful_import.json` in that folder. Copy that file to Linux:
+
+- `~/.config/easyeffects/output/` (typical install), or
+- `~/.var/app/com.github.wwmm.easyeffects/config/easyeffects/output/` (Flatpak)
+
+Then in Easy Effects: **Presets**, **Output**, choose **peaceful_import**. On Windows itself, keep using Peace / Equalizer APO for playback; Peaceful is for moving the curve to Linux.
 
 **4. Optional graph**
 
