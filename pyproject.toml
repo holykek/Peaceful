@@ -1,0 +1,25 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "peaceful"
+version = "0.1.0"
+description = "Import PEACE / Equalizer APO presets for Linux (PipeWire / EasyEffects)"
+readme = "README.md"
+license = { text = "MIT" }
+requires-python = ">=3.10"
+dependencies = []
+
+[project.optional-dependencies]
+viz = [
+    "numpy>=1.24",
+    "matplotlib>=3.7",
+]
+
+[project.scripts]
+peaceful = "peaceful.cli.main:main"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["peaceful*"]

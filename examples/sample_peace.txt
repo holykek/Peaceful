@@ -1,0 +1,8 @@
+# Example PEACE / Equalizer APO fragment
+Preamp: -6 dB
+Filter 1: ON PK Fc 1000 Hz Gain 3 dB Q 1.0
+Filter 2: ON LSC Fc 80 Hz Gain 2.5 dB Q 0.71
+Filter 3: OFF PK Fc 500 Hz Gain 99 dB Q 1.0
+Filter 4: ON HSC Fc 12000 Hz Gain -1.0 dB Q 0.7
+// ignored comment style
+UnknownFilter: ON PK Fc 100 Hz Gain 1 dB Q 1
