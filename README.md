@@ -139,11 +139,11 @@ peaceful visualize "/path/to/preset.txt"
 
 `-w` reloads when the file changes on disk.
 
-**Useful flags for `apply`:** `--name mypreset`, `--no-reload`, `--rlc`, `-o DIR`, `-v`. See `peaceful apply --help`.
+**Useful flags for `apply`:** `--name mypreset`, `--no-reload`, `--rlc`, `-o DIR`, `-v`, `--no-subsample`. See `peaceful apply --help`.
 
 ## Limitations
 
-- At most **32** EQ bands in Easy Effects.
+- Easy Effects allows **32** EQ bands. If your file has more (for example a 50-point FilterCurve), **`peaceful apply` picks 32 points log-spaced in frequency** so export still works. Use `--no-subsample` if you want an error instead.
 - Shelves and Q may not match Windows APO exactly. Default band mode is **APO (DR)**; try `--rlc` if needed.
 - **OFF** filters in the txt file are ignored.
 

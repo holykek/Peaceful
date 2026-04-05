@@ -41,6 +41,7 @@ Band type strings must match EasyEffects enums exactly (hyphenated shelf names).
 
 from __future__ import annotations
 
+import math
 from typing import Any
 
 from peaceful.models.preset import EqBand, PeacePreset
@@ -83,20 +84,60 @@ def _channel_dict(bands: list[EqBand], band_mode: str) -> dict[str, Any]:
     return {f"band{i}": _band_dict(b, band_mode) for i, b in enumerate(bands)}
 
 
-def peace_to_easyeffects_dict(preset: PeacePreset, *, band_mode: str | None = None) -> dict[str, Any]:
+def subsample_bands_log_spaced(bands: list[EqBand], k: int) -> list[EqBand]:
+    """
+    Pick up to ``k`` bands, spread in log-frequency, for Easy Effects' 32-band cap.
+    Keeps low and high ends; best for dense FilterCurve / graphic-style lists.
+    """
+    if len(bands) <= k:
+        return list(bands)
+    s = sorted(bands, key=lambda b: b.freq)
+    n = len(s)
+    log_f = [math.log(max(b.freq, 1.0)) for b in s]
+    lo, hi = log_f[0], log_f[-1]
+    if hi <= lo:
+        return s[:k]
+
+    used: set[int] = set()
+    out: list[EqBand] = []
+    for j in range(k):
+        t = lo + (hi - lo) * j / (k - 1) if k > 1 else lo
+        order = sorted(range(n), key=lambda i: abs(log_f[i] - t))
+        for i in order:
+            if i not in used:
+                used.add(i)
+                out.append(s[i])
+                break
+    out.sort(key=lambda b: b.freq)
+    return out
+
+
+def peace_to_easyeffects_dict(
+    preset: PeacePreset,
+    *,
+    band_mode: str | None = None,
+    allow_subsample: bool = False,
+) -> dict[str, Any]:
     """
     Build the JSON object EasyEffects expects for an output preset.
 
     ``band_mode`` defaults to APO (DR); pass ``RLC (BT)`` if an older EE build
     rejects APO mode for some band types.
+
+    With ``allow_subsample=True``, more than ``EE_MAX_BANDS`` bands are reduced
+    to ``EE_MAX_BANDS`` by log-spaced picking (see :func:`subsample_bands_log_spaced`).
     """
     mode = band_mode or _DEFAULT_BAND_MODE
     bands = list(preset.filters)
     if len(bands) > EE_MAX_BANDS:
-        raise ValueError(
-            f"EasyEffects equalizer supports at most {EE_MAX_BANDS} bands; "
-            f"this preset has {len(bands)}"
-        )
+        if allow_subsample:
+            bands = subsample_bands_log_spaced(bands, EE_MAX_BANDS)
+        else:
+            raise ValueError(
+                f"EasyEffects equalizer supports at most {EE_MAX_BANDS} bands; "
+                f"this preset has {len(preset.filters)}. Re-run apply without "
+                f"--no-subsample to trim automatically, or reduce bands in the source file."
+            )
 
     if not bands:
         raise ValueError("preset has no EQ bands to export (PEACE file had no supported ON filters)")

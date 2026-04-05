@@ -150,7 +150,8 @@ def _parse_filter_curve(text: str, default_q: float) -> tuple[list[EqBand], list
         )
         if len(bands) > 32:
             notes.append(
-                f"Easy Effects allows at most 32 bands; you have {len(bands)} (use apply only after trimming or merging)."
+                f"Easy Effects allows at most 32 bands; you have {len(bands)}. "
+                "`peaceful apply` trims to 32 (log-spaced) unless you pass --no-subsample."
             )
     return bands, notes
 

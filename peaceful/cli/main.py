@@ -64,11 +64,23 @@ def _cmd_apply(args: argparse.Namespace) -> int:
         return 1
 
     band_mode = "RLC (BT)" if args.rlc else None
+    n_in = len(result.preset.filters)
     try:
-        doc = peace_to_easyeffects_dict(result.preset, band_mode=band_mode)
+        doc = peace_to_easyeffects_dict(
+            result.preset,
+            band_mode=band_mode,
+            allow_subsample=not args.no_subsample,
+        )
     except ValueError as e:
         print(f"peaceful: {e}", file=sys.stderr)
         return 1
+
+    n_out = int(doc["output"]["equalizer"]["num-bands"])
+    if n_out < n_in:
+        print(
+            f"peaceful: trimmed {n_in} bands to {n_out} for Easy Effects (log-spaced).",
+            file=sys.stderr,
+        )
 
     name = args.name.strip()
     if name.endswith(".json"):
@@ -84,11 +96,10 @@ def _cmd_apply(args: argparse.Namespace) -> int:
         print(f"peaceful: {e}", file=sys.stderr)
         return 1
 
-    n = len(result.preset.filters)
     pre = result.preset.preamp
     pre_s = f"{pre} dB" if pre is not None else "0 dB (none in file)"
     print(f"Wrote EasyEffects output preset: {out_path}")
-    print(f"  bands: {n}, input-gain (preamp): {pre_s}")
+    print(f"  bands in file: {n_in}; bands in preset JSON: {n_out}, input-gain (preamp): {pre_s}")
 
     if args.verbose and result.warnings:
         for w in result.warnings:
@@ -216,6 +227,11 @@ def main() -> None:
         "--no-reload",
         action="store_true",
         help="Do not run easyeffects -l to load the preset",
+    )
+    app.add_argument(
+        "--no-subsample",
+        action="store_true",
+        help="Error if more than 32 bands instead of trimming (Easy Effects limit)",
     )
     app.add_argument(
         "-v",
