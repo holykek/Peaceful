@@ -48,9 +48,9 @@ def _cmd_import(args: argparse.Namespace) -> int:
     indent = 2 if args.pretty else None
     print(json.dumps(data, indent=indent))
 
-    if args.verbose and (result.warnings or result.skipped_lines):
+    if result.warnings and (args.verbose or not result.preset.filters):
         for w in result.warnings:
-            print(w, file=sys.stderr)
+            print(f"peaceful: {w}", file=sys.stderr)
     return 0
 
 

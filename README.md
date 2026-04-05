@@ -6,7 +6,9 @@ Peaceful reads **PEACE / Equalizer APO** `.txt` presets and builds **Easy Effect
 
 ## What it does
 
-- Reads `Filter:` / `Preamp:` lines (PK, LS, HS, and similar). Skips what it does not support.
+- Reads Equalizer APO style `Filter:` / `Preamp:` lines (PK, LS, HS, LSC, HSC, and similar). Skips what it does not support.
+- Reads a single-line **`GraphicEQ:`** preset (`GraphicEQ: 20 1.5; 40 2.0; ...`) like many AutoEq exports. That is converted to peaking bands (approximation, not identical to APO's GraphicEQ).
+- Does **not** read Peace's **`.peace`** profile files. Point Peaceful at a `.txt` that contains APO text (for example content like `Filter 1: ON PK ...` or `GraphicEQ: ...`), or paste that text into a new file.
 - `import`: print JSON for debugging.
 - `apply`: write `peaceful_import.json` (or another name) into Easy Effects' output preset folder.
 - `visualize`: optional EQ curve plot (needs extra Python packages).
