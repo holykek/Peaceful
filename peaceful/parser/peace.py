@@ -55,6 +55,15 @@ def _float_apo(s: str) -> float:
     return float(s.strip().replace(",", "."))
 
 
+def _normalize_import_text(text: str) -> str:
+    """Peace / Windows editors sometimes use curly quotes or invisible chars."""
+    text = text.replace("\u201c", '"').replace("\u201d", '"')
+    text = text.replace("\u2018", "'").replace("\u2019", "'")
+    text = text.replace("\u200b", "").replace("\u200c", "").replace("\u200d", "")
+    text = text.replace("\ufeff", "")
+    return text
+
+
 def _decode_file_bytes(raw: bytes) -> str:
     if raw.startswith(b"\xff\xfe"):
         return raw.decode("utf-16-le")
@@ -66,7 +75,7 @@ def _decode_file_bytes(raw: bytes) -> str:
     if nul_ratio > 0.01 and len(raw) % 2 == 0:
         try:
             t = raw.decode("utf-16-le")
-            if "GraphicEQ" in t or "Filter" in t or "Preamp" in t:
+            if "GraphicEQ" in t or "FilterCurve" in t or "Filter" in t or "Preamp" in t:
                 return t
         except UnicodeDecodeError:
             pass
@@ -100,6 +109,52 @@ def _parse_graphic_eq(text: str, default_q: float) -> tuple[list[EqBand], list[s
     return bands, notes
 
 
+_FILTER_CURVE_KV = re.compile(r'\b([fv])(\d+)\s*=\s*"([^"]*)"')
+
+
+def _parse_filter_curve(text: str, default_q: float) -> tuple[list[EqBand], list[str]]:
+    """
+    Peace GUI text export: FilterCurve:f0="10" ... v0="0.888" ...
+    Pairs fN (Hz) with vN (dB) into peaking bands (approximation of the spline curve).
+    """
+    if "filtercurve" not in text.lower():
+        return [], []
+
+    f_hz: dict[int, float] = {}
+    gain_db: dict[int, float] = {}
+    for m in _FILTER_CURVE_KV.finditer(text):
+        kind = m.group(1).lower()
+        idx = int(m.group(2))
+        raw = m.group(3).strip()
+        if not raw:
+            continue
+        try:
+            val = _float_apo(raw)
+        except ValueError:
+            continue
+        if kind == "f":
+            f_hz[idx] = val
+        elif kind == "v":
+            gain_db[idx] = val
+
+    idx_ok = sorted(set(f_hz.keys()) & set(gain_db.keys()))
+    bands = [
+        EqBand(type="peaking", freq=f_hz[i], gain=gain_db[i], q=default_q)
+        for i in idx_ok
+    ]
+    notes: list[str] = []
+    if bands:
+        notes.append(
+            f"interpreted Peace FilterCurve ({len(bands)} f/v pairs) as peaking bands with Q={default_q}; "
+            "this is only an approximation of Peace's spline, not a bit-identical match."
+        )
+        if len(bands) > 32:
+            notes.append(
+                f"Easy Effects allows at most 32 bands; you have {len(bands)} (use apply only after trimming or merging)."
+            )
+    return bands, notes
+
+
 @dataclass
 class ParseResult:
     preset: PeacePreset
@@ -116,6 +171,7 @@ class PeacePresetParser:
     def parse_text(self, text: str) -> ParseResult:
         if text.startswith("\ufeff"):
             text = text[1:]
+        text = _normalize_import_text(text)
 
         warnings: list[str] = []
         skipped: list[int] = []
@@ -176,13 +232,23 @@ class PeacePresetParser:
             warnings.extend(gq_notes)
 
         if not bands:
+            fc_bands, fc_notes = _parse_filter_curve(text, default_q=math.sqrt(2.0))
+            bands.extend(fc_bands)
+            warnings.extend(fc_notes)
+
+        if not bands:
             sample = text.strip()[:200].replace("\n", " ")
-            warnings.append(
-                "no EQ bands found. Expected lines like "
-                "'Filter 1: ON PK Fc 1000 Hz Gain 3 dB Q 1.0' or a 'GraphicEQ: f g; ...' line. "
-                "Peace '.peace' GUI files are not read yet; export or copy the Equalizer APO config text. "
+            msg = (
+                "no EQ bands found. Expected: APO 'Filter 1: ON PK Fc ... Hz Gain ... dB Q ...', "
+                "'GraphicEQ: ...', or Peace 'FilterCurve:f0=\"...\" v0=\"...\" ...'. "
                 f"File starts with: {sample!r}"
             )
+            if "filtercurve" in text.lower():
+                msg += (
+                    " Your file looks like Peace FilterCurve; you are probably running an old Peaceful "
+                    "(upgrade: py -m pip install --force-reinstall \"git+https://github.com/holykek/peaceful.git\")."
+                )
+            warnings.append(msg)
 
         return ParseResult(
             preset=PeacePreset(preamp=preamp, filters=bands),

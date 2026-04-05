@@ -8,6 +8,7 @@ from pathlib import Path
 from peaceful.converters.easyeffects import peace_to_easyeffects_dict
 from peaceful.integrations.easyeffects_paths import easyeffects_output_dir
 from peaceful.integrations.easyeffects_reload import try_load_output_preset
+from peaceful import __version__
 from peaceful.parser.peace import PeacePresetParser
 
 
@@ -131,6 +132,11 @@ def main() -> None:
     ap = argparse.ArgumentParser(
         prog="peaceful",
         description="Import PEACE / Equalizer APO presets for Linux audio stacks.",
+    )
+    ap.add_argument(
+        "--version",
+        action="version",
+        version=f"%(prog)s {__version__}",
     )
     sub = ap.add_subparsers(dest="command", required=True)
 
