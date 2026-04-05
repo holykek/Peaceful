@@ -1,228 +1,143 @@
 # Peaceful
 
-Peaceful reads **PEACE / Equalizer APO** `.txt` presets and turns them into something you can use on **Linux** with **PipeWire** and **[Easy Effects](https://github.com/wwmm/easyeffects)**.
+Peaceful reads **PEACE / Equalizer APO** `.txt` presets and builds **Easy Effects** output preset files for **Linux** (PipeWire). It only parses and writes JSON; it is not a full DSP engine.
 
-It is a **compatibility layer**: it does not implement its own DSP engine. Parsing and preset generation only.
-
-**Status:** early / MVP (0.1.x). Feedback and PRs welcome.
+**Status:** early MVP (0.1.x). Issues and PRs welcome.
 
 ## What it does
 
-- Parses common `Filter:` / `Preamp:` lines (PK, LS, HS, etc.); skips unsupported lines safely.
-- Prints a small internal JSON (`import`).
-- Writes an Easy Effects **output** preset JSON and optionally asks Easy Effects to load it (`apply`).
-- Optional **EQ curve plot** from the parsed bands (`visualize`, extra dependencies).
-
----
+- Reads `Filter:` / `Preamp:` lines (PK, LS, HS, and similar). Skips what it does not support.
+- `import`: print JSON for debugging.
+- `apply`: write `peaceful_import.json` (or another name) into Easy Effects' output preset folder.
+- `visualize`: optional EQ curve plot (needs extra Python packages).
 
 ## What you need
 
-| | |
-|--|--|
-| **OS** | **Linux** to apply presets in Easy Effects. (You can check parsing on Windows/macOS, but `apply` targets Linux paths.) |
-| **Python** | **3.10 or newer** (`python3 --version`) |
-| **Audio** | [Easy Effects](https://github.com/wwmm/easyeffects) installed and working with PipeWire |
-| **Git** | Only if you install from GitHub (see below). Not needed if you use `pip` from a downloaded wheel/sdist later. |
+- **Python 3.10+** on the machine where you run Peaceful.
+- **Linux + Easy Effects** if you want to use `apply` and hear the EQ. Windows is fine for `import`, generating JSON, and `visualize` if you install the viz extras.
 
----
+Repo: **https://github.com/holykek/peaceful**
 
-## Install (for end users)
+## Install on Linux
 
-Pick **one** method. Replace **`OWNER`** in the URLs below with the **GitHub username or organization** that hosts this repository (the same name you see in `https://github.com/OWNER/peaceful`).
-
-### Option A — Recommended: `pipx` (isolated CLI, no virtualenv to manage)
-
-[`pipx`](https://pipx.pypa.io/) installs Peaceful in its own environment and puts the `peaceful` command on your PATH.
-
-1. **Install pipx** (if you do not have it), for example on Arch / CachyOS:
-
-   ```bash
-   sudo pacman -S python-pipx
-   pipx ensurepath
-   ```
-
-   Then **log out and back in** (or open a new terminal) so `PATH` updates.
-
-2. **Install Peaceful from GitHub:**
-
-   ```bash
-   pipx install "git+https://github.com/OWNER/peaceful.git"
-   ```
-
-3. **Optional — EQ plot** (`visualize` needs NumPy and Matplotlib):
-
-   ```bash
-   pipx inject peaceful numpy matplotlib
-   ```
-
-   Or install everything in one step (if your `pipx` supports PEP 508 extras):
-
-   ```bash
-   pipx install "peaceful[viz] @ git+https://github.com/OWNER/peaceful.git"
-   ```
-
-4. **Check that it works:**
-
-   ```bash
-   peaceful import --help
-   ```
-
-   If `peaceful` is not found, run `pipx ensurepath`, restart the terminal, or use:
-
-   ```bash
-   pipx run --spec "git+https://github.com/OWNER/peaceful.git" peaceful import --help
-   ```
-
-### Option B — Virtual environment (full control)
-
-Good if you prefer not to use `pipx`.
+**Easiest (recommended):** install [pipx](https://pipx.pypa.io/), then:
 
 ```bash
-python3 -m venv ~/peaceful-env
-source ~/peaceful-env/bin/activate   # fish: source ~/peaceful-env/bin/activate.fish
-python -m pip install --upgrade pip
-python -m pip install "git+https://github.com/OWNER/peaceful.git"
+pipx install "git+https://github.com/holykek/peaceful.git"
 ```
 
-Optional graphing:
+Graphs for `visualize`:
 
 ```bash
-python -m pip install "peaceful[viz] @ git+https://github.com/OWNER/peaceful.git"
-```
-
-Whenever you open a new terminal, activate the venv before running `peaceful`:
-
-```bash
-source ~/peaceful-env/bin/activate
-```
-
-If `peaceful` is still not on `PATH`, use:
-
-```bash
-python -m peaceful import --help
-```
-
-### Option C — From PyPI (when published)
-
-If this project is published on PyPI, installation becomes:
-
-```bash
-pipx install peaceful
-# optional:
 pipx inject peaceful numpy matplotlib
 ```
 
-Until then, use **Option A** or **B**.
-
-### Option D — Contributors: clone and editable install
-
-For people who want to change the code:
+**Without pipx:** use a venv in your home directory:
 
 ```bash
-git clone https://github.com/OWNER/peaceful.git
-cd peaceful
-python -m pip install -e .
-python -m pip install -e ".[viz]"   # optional
+python3 -m venv ~/peaceful-env
+source ~/peaceful-env/bin/activate
+python -m pip install "git+https://github.com/holykek/peaceful.git"
+python -m pip install "peaceful[viz] @ git+https://github.com/holykek/peaceful.git"
 ```
 
----
+Next time you open a terminal, run `source ~/peaceful-env/bin/activate` before `peaceful`.
 
-## Usage guide (step by step)
+**If the command `peaceful` is missing:** run `python3 -m peaceful` with the same arguments (or `python -m peaceful` inside the venv).
 
-### 1. Check that your PEACE file is read correctly
+Arch / CachyOS example for pipx: `sudo pacman -S python-pipx` then `pipx ensurepath` and restart the terminal.
 
-Use the real path to your `.txt` preset (spaces in paths: use quotes).
+## Install on Windows
+
+1. Install **Python 3.10+** from [python.org](https://www.python.org/downloads/). Enable **Add python.exe to PATH** in the installer.
+2. Open **PowerShell** or **Command Prompt** and run:
+
+```powershell
+py -m pip install --user "git+https://github.com/holykek/peaceful.git"
+```
+
+If `py` is not found, try `python` instead of `py`.
+
+**No Git installed?** Use the zip URL instead:
+
+```powershell
+py -m pip install --user "https://github.com/holykek/peaceful/archive/refs/heads/main.zip"
+```
+
+**Graphs (`visualize`):** after Peaceful is installed, add:
+
+```powershell
+py -m pip install --user numpy matplotlib
+```
+
+**If `peaceful` is not on PATH:** always use:
+
+```powershell
+py -m peaceful import --help
+```
+
+## How to use
+
+**1. Test the preset file**
+
+```text
+peaceful import "C:\path\to\preset.txt" --pretty -v
+```
+
+On Linux use `/home/you/...` paths. Quotes matter if the path has spaces.
+
+**2. On Linux only: write the Easy Effects preset**
+
+```text
+peaceful apply "/path/to/preset.txt"
+```
+
+Default file: `~/.config/easyeffects/output/peaceful_import.json`
+
+In Easy Effects: **Presets**, **Output**, pick **peaceful_import**.
+
+**Flatpak** Easy Effects often uses:
+
+`~/.var/app/com.github.wwmm.easyeffects/config/easyeffects/output/`
+
+Either:
 
 ```bash
-peaceful import "/path/to/My EQ.txt" --pretty -v
+export PEACEFUL_EASYEFFECTS_OUTPUT="$HOME/.var/app/com.github.wwmm.easyeffects/config/easyeffects/output"
+peaceful apply "/path/to/preset.txt"
 ```
 
-You should see JSON with `preamp` (if present) and a `filters` list. `-v` prints warnings for skipped or unknown lines.
-
-### 2. Install the preset into Easy Effects (Linux)
-
-1. Start **Easy Effects** (and enable processing for your output device if you normally do).
-2. Run:
-
-   ```bash
-   peaceful apply "/path/to/My EQ.txt"
-   ```
-
-3. By default this creates:
-
-   `~/.config/easyeffects/output/peaceful_import.json`
-
-4. In **Easy Effects**: open **Presets** → **Output** (playback chain) → select **peaceful_import** (the label is the filename without `.json`).
-
-5. If the preset **does not appear** and you installed Easy Effects **via Flatpak**, configs often live here instead:
-
-   `~/.var/app/com.github.wwmm.easyeffects/config/easyeffects/output/`
-
-   Point Peaceful at that folder once per terminal session (or put it in your shell profile):
-
-   ```bash
-   export PEACEFUL_EASYEFFECTS_OUTPUT="$HOME/.var/app/com.github.wwmm.easyeffects/config/easyeffects/output"
-   peaceful apply "/path/to/My EQ.txt"
-   ```
-
-   Or pass the directory explicitly:
-
-   ```bash
-   peaceful apply "/path/to/My EQ.txt" -o "$HOME/.var/app/com.github.wwmm.easyeffects/config/easyeffects/output"
-   ```
-
-6. **Auto-load:** `apply` tries `easyeffects -l peaceful_import` (or Flatpak). If that fails, the tool still wrote the JSON; load the preset manually in the app as in step 4.
-
-### 3. Optional: plot the theoretical EQ curve
-
-Requires the **viz** extra (see install options above).
+or:
 
 ```bash
-peaceful visualize "/path/to/My EQ.txt"
+peaceful apply "/path/to/preset.txt" -o "$HOME/.var/app/com.github.wwmm.easyeffects/config/easyeffects/output"
 ```
 
-Add `-w` / `--watch` to refresh the plot when you save changes to the same file.
+**3. Windows workflow tip:** run `import` or `apply --no-reload` with `-o` pointing to a folder you can copy to your Linux machine (USB, cloud), then drop the `.json` into the Easy Effects `output` folder on Linux.
 
-### Command reference
+**4. Optional graph**
 
-| Command | Purpose |
-|--------|---------|
-| `peaceful import FILE` | Print parsed JSON (`--pretty`, `-v` for warnings) |
-| `peaceful apply FILE` | Write Easy Effects output preset + try to load it |
-| `peaceful visualize FILE` | Open magnitude plot (needs viz dependencies) |
+```text
+peaceful visualize "/path/to/preset.txt"
+```
 
-**`peaceful apply` flags**
+`-w` reloads when the file changes on disk.
 
-| Flag | Meaning |
-|------|--------|
-| `--name mypreset` | Write `mypreset.json` and try to load `mypreset` |
-| `--no-reload` | Only write the file; do not run `easyeffects -l` |
-| `--rlc` | Use **RLC (BT)** per-band mode instead of **APO (DR)** if the curve sounds wrong |
-| `-o DIR` | Output directory for the `.json` file |
-| `-v` | Parser warnings on stderr |
-
----
+**Useful flags for `apply`:** `--name mypreset`, `--no-reload`, `--rlc`, `-o DIR`, `-v`. See `peaceful apply --help`.
 
 ## Limitations
 
-- Easy Effects’ built-in equalizer supports **at most 32 bands**; larger PEACE configs will error until trimmed or split.
-- Shelf and Q behavior may differ slightly from Windows APO; **APO (DR)** band mode is used by default to stay close to APO-style math.
-- **OFF** filters are ignored (same as not being in the chain).
+- At most **32** EQ bands in Easy Effects.
+- Shelves and Q may not match Windows APO exactly. Default band mode is **APO (DR)**; try `--rlc` if needed.
+- **OFF** filters in the txt file are ignored.
 
 ## Project layout
 
 ```text
-peaceful/
-  cli/            # argparse entrypoint
-  parser/         # PEACE / APO text parser
-  converters/     # Easy Effects JSON
-  integrations/   # paths, optional reload helper
-  models/         # preset dataclasses
-  viz/            # optional matplotlib curve
-examples/
-  sample_peace.txt
+peaceful/   CLI, parser, Easy Effects converter, optional viz
+examples/   sample_peace.txt
 ```
 
 ## License
 
-MIT — see [LICENSE](LICENSE).
+MIT. See [LICENSE](LICENSE).
