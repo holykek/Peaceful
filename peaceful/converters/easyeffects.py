@@ -1,12 +1,13 @@
 """
 EasyEffects output preset shape (native Equalizer plugin, not LSP).
 
-Top-level keys mirror community presets and EasyEffects' own save format::
+Top-level keys mirror community presets and EasyEffects' own save format.
+Newer EasyEffects versions usually use plugin instance names like ``equalizer#0``::
 
     {
       "output": {
         "blocklist": [],
-        "equalizer": {
+        "equalizer#0": {
           "bypass": false,
           "input-gain": <float>,   # dB — maps from PEACE Preamp
           "output-gain": 0.0,
@@ -19,7 +20,7 @@ Top-level keys mirror community presets and EasyEffects' own save format::
           "left": { "band0": { ... }, ... },
           "right": { ... same as left ... },
         },
-        "plugins_order": ["equalizer"]
+        "plugins_order": ["equalizer#0"]
       }
     }
 
@@ -77,6 +78,8 @@ def _band_dict(band: EqBand, band_mode: str) -> dict[str, Any]:
         "q": float(band.q),
         "mute": False,
         "solo": False,
+        # Present in many EE exports; keeps compatibility across versions.
+        "width": 4.0,
     }
 
 
@@ -117,6 +120,7 @@ def peace_to_easyeffects_dict(
     *,
     band_mode: str | None = None,
     allow_subsample: bool = False,
+    plugin_instance: str = "equalizer#0",
 ) -> dict[str, Any]:
     """
     Build the JSON object EasyEffects expects for an output preset.
@@ -160,10 +164,14 @@ def peace_to_easyeffects_dict(
         "right": {k: dict(v) for k, v in ch.items()},
     }
 
-    return {
+    out = {
         "output": {
             "blocklist": [],
-            "equalizer": eq,
-            "plugins_order": ["equalizer"],
+            plugin_instance: eq,
+            "plugins_order": [plugin_instance],
         }
     }
+    # Compatibility alias for older presets/readers that still expect "equalizer".
+    if plugin_instance != "equalizer":
+        out["output"]["equalizer"] = eq
+    return out

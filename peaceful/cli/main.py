@@ -65,17 +65,19 @@ def _cmd_apply(args: argparse.Namespace) -> int:
 
     band_mode = "RLC (BT)" if args.rlc else None
     n_in = len(result.preset.filters)
+    plugin_instance = "equalizer" if args.legacy_plugin_key else "equalizer#0"
     try:
         doc = peace_to_easyeffects_dict(
             result.preset,
             band_mode=band_mode,
             allow_subsample=not args.no_subsample,
+            plugin_instance=plugin_instance,
         )
     except ValueError as e:
         print(f"peaceful: {e}", file=sys.stderr)
         return 1
 
-    n_out = int(doc["output"]["equalizer"]["num-bands"])
+    n_out = int(doc["output"][plugin_instance]["num-bands"])
     if n_out < n_in:
         print(
             f"peaceful: trimmed {n_in} bands to {n_out} for Easy Effects (log-spaced).",
@@ -232,6 +234,11 @@ def main() -> None:
         "--no-subsample",
         action="store_true",
         help="Error if more than 32 bands instead of trimming (Easy Effects limit)",
+    )
+    app.add_argument(
+        "--legacy-plugin-key",
+        action="store_true",
+        help="Use legacy output key 'equalizer' instead of 'equalizer#0'",
     )
     app.add_argument(
         "-v",
